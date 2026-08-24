@@ -13,7 +13,12 @@ const pool = configureApp(config);
 if (config.webDir) {
   const indexHtml = readFileSync(join(config.webDir, "index.html"), "utf8");
   app.use("*", serveStatic({ root: config.webDir }));
-  app.get("*", (c) => c.html(indexHtml));
+  app.get("*", (c) => {
+    // Unknown API paths get a proper JSON 404 rather than falling through to
+    // the SPA; everything else serves index.html for client-side routing.
+    if (c.req.path.startsWith("/api/")) return c.json({ error: "not found" }, 404);
+    return c.html(indexHtml);
+  });
 }
 
 const server = serve({ fetch: app.fetch, port: config.port }, (info) => {

@@ -19,7 +19,6 @@ import {
   accessQuerySchema,
   addGroupClientSchema,
   addRoleSchema,
-  anonymousGroupSchema,
   aclSchema,
   createClientSchema,
   createGroupSchema,
@@ -213,14 +212,6 @@ const role_routes = new Hono<Env>()
     return c.json({ ok: true });
   });
 
-const anonymous_routes = new Hono<Env>()
-  .use("*", auth)
-  .get("/", async (c) => c.json({ groupname: await c.get("dynsec").getAnonymousGroup() }))
-  .put("/", zValidator("json", anonymousGroupSchema), async (c) => {
-    await c.get("dynsec").setAnonymousGroup(c.req.valid("json").groupname);
-    return c.json({ ok: true });
-  });
-
 const default_acl_routes = new Hono<Env>()
   .use("*", auth)
   .get("/", async (c) => c.json(await c.get("dynsec").getDefaultAclAccess()))
@@ -245,7 +236,6 @@ const api = new Hono<Env>()
   .route("/clients", client_routes)
   .route("/groups", group_routes)
   .route("/roles", role_routes)
-  .route("/anonymous", anonymous_routes)
   .route("/default-acl", default_acl_routes)
   .route("/access", access_routes);
 

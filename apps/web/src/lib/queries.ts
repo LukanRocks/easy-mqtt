@@ -9,7 +9,6 @@ export const queryKeys = {
   group: (groupname: string) => ["groups", groupname] as const,
   roles: ["roles"] as const,
   role: (rolename: string) => ["roles", rolename] as const,
-  anonymous: ["anonymous"] as const,
   defaultAcl: ["default-acl"] as const,
   access: (topic: string) => ["access", topic] as const,
 };
@@ -46,11 +45,6 @@ export const roleQuery = (rolename: string) =>
     queryKey: queryKeys.role(rolename),
     queryFn: () => api.roles.get(rolename),
   });
-
-export const anonymousQuery = queryOptions({
-  queryKey: queryKeys.anonymous,
-  queryFn: api.anonymous.get,
-});
 
 export const defaultAclQuery = queryOptions({
   queryKey: queryKeys.defaultAcl,

@@ -73,7 +73,6 @@ export const removeAclSchema = z.object({
   topic: z.string().min(1),
 });
 
-export const anonymousGroupSchema = z.object({ groupname: z.string() });
 
 export const defaultAclSchema = z.object({
   acls: z.array(

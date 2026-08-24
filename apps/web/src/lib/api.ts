@@ -94,10 +94,6 @@ export const api = {
     removeAcl: (rolename: string, acltype: Acl["acltype"], topic: string) =>
       unwrap(rpc.api.roles[":rolename"].acls.$delete({ param: { rolename }, query: { acltype, topic } })),
   },
-  anonymous: {
-    get: () => unwrap<{ groupname: string }>(rpc.api.anonymous.$get()),
-    set: (groupname: string) => unwrap(rpc.api.anonymous.$put({ json: { groupname } })),
-  },
   defaultAcl: {
     get: () => unwrap<Acl[]>(rpc.api["default-acl"].$get()),
     set: (acls: Acl[]) => unwrap(rpc.api["default-acl"].$put({ json: { acls } })),
