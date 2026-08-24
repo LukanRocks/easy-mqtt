@@ -1,6 +1,6 @@
 import { Link } from "@tanstack/react-router";
 import { useQuery } from "@tanstack/react-query";
-import { Plus, ShieldCheck, UserCog, Users, UsersRound } from "lucide-react";
+import { Boxes, Plus, ShieldCheck, UserCog, Users } from "lucide-react";
 import { DEFAULT_ACL_TYPES } from "@easy-mqtt/dynsec";
 import { Badge } from "@/components/ui/badge";
 import { Button } from "@/components/ui/button";
@@ -72,7 +72,7 @@ export function DashboardPage() {
           label="Groups"
           value={groups.data?.total}
           loading={groups.isLoading}
-          icon={UsersRound}
+          icon={Boxes}
           to="/groups"
         />
         <StatCard

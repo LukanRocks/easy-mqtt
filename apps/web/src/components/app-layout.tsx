@@ -2,12 +2,12 @@ import { Link, Outlet, useNavigate, useRouterState } from "@tanstack/react-route
 import { useQueryClient } from "@tanstack/react-query";
 import {
   Activity,
+  Boxes,
   LayoutDashboard,
   LogOut,
   Radio,
   ShieldCheck,
   Users,
-  UsersRound,
 } from "lucide-react";
 import { toast } from "sonner";
 import { Button } from "@/components/ui/button";
@@ -18,7 +18,7 @@ import { cn } from "@/lib/utils";
 const NAV = [
   { to: "/", label: "Dashboard", icon: LayoutDashboard, exact: true },
   { to: "/clients", label: "Clients", icon: Users, exact: false },
-  { to: "/groups", label: "Groups", icon: UsersRound, exact: false },
+  { to: "/groups", label: "Groups", icon: Boxes, exact: false },
   { to: "/roles", label: "Roles", icon: ShieldCheck, exact: false },
   { to: "/access", label: "Access", icon: Activity, exact: false },
 ] as const;
