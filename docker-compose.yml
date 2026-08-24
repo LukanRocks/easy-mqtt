@@ -1,0 +1,17 @@
+services:
+  easy-mqtt:
+    build:
+      context: .
+      dockerfile: docker/Dockerfile
+    image: easy-mqtt:latest
+    container_name: easy-mqtt
+    restart: unless-stopped
+    environment:
+      DYNSEC_ADMIN_USER: admin # Admin account created on first run.
+      # DYNSEC_ADMIN_PASSWORD: change-me   # omit to auto-generate (printed once in the logs)
+      # COOKIE_SECURE: "true"              # set when serving the UI behind HTTPS
+    ports:
+      - '1883:1883' # MQTT for real devices/clients
+      - '8080:80' # admin web UI
+    volumes:
+      - ./data:/data # Host folder where ALL persistent data is stored.

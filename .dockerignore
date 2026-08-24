@@ -1,0 +1,12 @@
+**/node_modules
+**/dist
+**/.turbo
+**/*.tsbuildinfo
+**/.vite
+data/
+.git
+.env
+.env.local
+*.log
+.DS_Store
+reference/
