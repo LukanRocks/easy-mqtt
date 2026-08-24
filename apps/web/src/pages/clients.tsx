@@ -3,7 +3,7 @@ import { Link, useNavigate } from "@tanstack/react-router";
 import { useMutation, useQuery, useQueryClient } from "@tanstack/react-query";
 import { useForm } from "@tanstack/react-form";
 import type { ColumnDef } from "@tanstack/react-table";
-import { Ban, CheckCircle2, Plus, Trash2 } from "lucide-react";
+import { Ban, CheckCircle2, MoreHorizontal, Plus, Trash2 } from "lucide-react";
 import { toast } from "sonner";
 import type { Client } from "@easy-mqtt/dynsec";
 import { Badge } from "@/components/ui/badge";
@@ -17,6 +17,13 @@ import {
   DialogTitle,
   DialogTrigger,
 } from "@/components/ui/dialog";
+import {
+  DropdownMenu,
+  DropdownMenuContent,
+  DropdownMenuItem,
+  DropdownMenuSeparator,
+  DropdownMenuTrigger,
+} from "@/components/ui/dropdown-menu";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
 import { ConfirmDialog } from "@/components/confirm-dialog";
@@ -30,13 +37,12 @@ function CreateClientDialog() {
   const queryClient = useQueryClient();
 
   const form = useForm({
-    defaultValues: { username: "", password: "", textname: "", textdescription: "" },
+    defaultValues: { username: "", password: "", textdescription: "" },
     onSubmit: async ({ value }) => {
       try {
         await api.clients.create({
           username: value.username,
           password: value.password || undefined,
-          textname: value.textname || undefined,
           textdescription: value.textdescription || undefined,
         });
         await queryClient.invalidateQueries({ queryKey: queryKeys.clients });
@@ -96,18 +102,6 @@ function CreateClientDialog() {
               </div>
             )}
           </form.Field>
-          <form.Field name="textname">
-            {(field) => (
-              <div className="space-y-2">
-                <Label htmlFor="c-textname">Display name</Label>
-                <Input
-                  id="c-textname"
-                  value={field.state.value}
-                  onChange={(e) => field.handleChange(e.target.value)}
-                />
-              </div>
-            )}
-          </form.Field>
           <form.Field name="textdescription">
             {(field) => (
               <div className="space-y-2">
@@ -135,22 +129,73 @@ function CreateClientDialog() {
   );
 }
 
-export function ClientsPage() {
-  const navigate = useNavigate();
+function ClientRowActions({ client }: { client: Client }) {
   const queryClient = useQueryClient();
-  const { data, isLoading } = useQuery(clientsQuery);
-
+  const [menuOpen, setMenuOpen] = useState(false);
+  const [confirmOpen, setConfirmOpen] = useState(false);
   const invalidate = () => queryClient.invalidateQueries({ queryKey: queryKeys.clients });
 
   const toggle = useMutation({
-    mutationFn: ({ username, disabled }: { username: string; disabled: boolean }) =>
-      disabled ? api.clients.enable(username) : api.clients.disable(username),
-    onSuccess: (_d, v) => {
+    mutationFn: () =>
+      client.disabled ? api.clients.enable(client.username) : api.clients.disable(client.username),
+    onSuccess: () => {
       invalidate();
-      toast.success(v.disabled ? "Client enabled" : "Client disabled");
+      toast.success(client.disabled ? "Client enabled" : "Client disabled");
     },
     onError: (e) => toast.error(e instanceof ApiError ? e.message : "Action failed"),
   });
+
+  return (
+    <div className="flex justify-end" onClick={(e) => e.stopPropagation()}>
+      <DropdownMenu open={menuOpen} onOpenChange={setMenuOpen}>
+        <DropdownMenuTrigger asChild>
+          <Button variant="ghost" size="icon" title="Actions">
+            <MoreHorizontal className="size-4" />
+            <span className="sr-only">Open actions</span>
+          </Button>
+        </DropdownMenuTrigger>
+        <DropdownMenuContent align="end">
+          <DropdownMenuItem onSelect={() => toggle.mutate()}>
+            {client.disabled ? <CheckCircle2 /> : <Ban />}
+            {client.disabled ? "Enable" : "Disable"}
+          </DropdownMenuItem>
+          <DropdownMenuSeparator />
+          <DropdownMenuItem
+            className="text-destructive focus:text-destructive"
+            onSelect={(e) => {
+              e.preventDefault();
+              setMenuOpen(false);
+              setConfirmOpen(true);
+            }}
+          >
+            <Trash2 />
+            Delete
+          </DropdownMenuItem>
+        </DropdownMenuContent>
+      </DropdownMenu>
+      <ConfirmDialog
+        open={confirmOpen}
+        onOpenChange={setConfirmOpen}
+        title={`Delete client “${client.username}”?`}
+        description="This permanently removes the client from the broker."
+        confirmLabel="Delete"
+        onConfirm={async () => {
+          try {
+            await api.clients.remove(client.username);
+            invalidate();
+            toast.success("Client deleted");
+          } catch (e) {
+            toast.error(e instanceof ApiError ? e.message : "Delete failed");
+          }
+        }}
+      />
+    </div>
+  );
+}
+
+export function ClientsPage() {
+  const navigate = useNavigate();
+  const { data, isLoading } = useQuery(clientsQuery);
 
   const columns: ColumnDef<Client>[] = [
     {
@@ -168,10 +213,10 @@ export function ClientsPage() {
       ),
     },
     {
-      accessorKey: "textname",
-      header: "Display name",
+      accessorKey: "textdescription",
+      header: "Description",
       cell: ({ row }) => (
-        <span className="text-muted-foreground">{row.original.textname || "—"}</span>
+        <span className="text-muted-foreground">{row.original.textdescription || "—"}</span>
       ),
     },
     {
@@ -201,46 +246,7 @@ export function ClientsPage() {
     {
       id: "actions",
       header: () => <span className="sr-only">Actions</span>,
-      cell: ({ row }) => (
-        <div className="flex justify-end gap-1" onClick={(e) => e.stopPropagation()}>
-          <Button
-            variant="ghost"
-            size="icon"
-            title={row.original.disabled ? "Enable" : "Disable"}
-            onClick={() =>
-              toggle.mutate({
-                username: row.original.username,
-                disabled: !!row.original.disabled,
-              })
-            }
-          >
-            {row.original.disabled ? (
-              <CheckCircle2 className="size-4" />
-            ) : (
-              <Ban className="size-4" />
-            )}
-          </Button>
-          <ConfirmDialog
-            trigger={
-              <Button variant="ghost" size="icon" title="Delete">
-                <Trash2 className="size-4 text-destructive" />
-              </Button>
-            }
-            title={`Delete client “${row.original.username}”?`}
-            description="This permanently removes the client from the broker."
-            confirmLabel="Delete"
-            onConfirm={async () => {
-              try {
-                await api.clients.remove(row.original.username);
-                invalidate();
-                toast.success("Client deleted");
-              } catch (e) {
-                toast.error(e instanceof ApiError ? e.message : "Delete failed");
-              }
-            }}
-          />
-        </div>
-      ),
+      cell: ({ row }) => <ClientRowActions client={row.original} />,
     },
   ];
 

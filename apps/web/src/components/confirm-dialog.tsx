@@ -11,7 +11,11 @@ import {
 } from "@/components/ui/dialog";
 
 interface ConfirmDialogProps {
-  trigger: ReactNode;
+  /** Optional trigger element (uncontrolled usage). Omit when controlling `open`. */
+  trigger?: ReactNode;
+  /** Controlled open state — pass with `onOpenChange` to drive it externally. */
+  open?: boolean;
+  onOpenChange?: (open: boolean) => void;
   title: string;
   description?: string;
   confirmLabel?: string;
@@ -21,13 +25,21 @@ interface ConfirmDialogProps {
 
 export function ConfirmDialog({
   trigger,
+  open: openProp,
+  onOpenChange,
   title,
   description,
   confirmLabel = "Confirm",
   destructive = true,
   onConfirm,
 }: ConfirmDialogProps) {
-  const [open, setOpen] = useState(false);
+  const [internalOpen, setInternalOpen] = useState(false);
+  const isControlled = openProp !== undefined;
+  const open = isControlled ? openProp : internalOpen;
+  const setOpen = (value: boolean) => {
+    if (!isControlled) setInternalOpen(value);
+    onOpenChange?.(value);
+  };
   const [busy, setBusy] = useState(false);
 
   async function handleConfirm() {
@@ -42,7 +54,7 @@ export function ConfirmDialog({
 
   return (
     <Dialog open={open} onOpenChange={setOpen}>
-      <DialogTrigger asChild>{trigger}</DialogTrigger>
+      {trigger && <DialogTrigger asChild>{trigger}</DialogTrigger>}
       <DialogContent className="max-w-md">
         <DialogHeader>
           <DialogTitle>{title}</DialogTitle>

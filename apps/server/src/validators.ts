@@ -12,7 +12,8 @@ export const createClientSchema = z.object({
   username: z.string().min(1),
   password: z.string().min(1).optional(),
   clientid: z.string().optional(),
-  textname: z.string().optional(),
+  // Clients intentionally have no display name (textname) — the username is the
+  // identity and the description explains what the client is.
   textdescription: z.string().optional(),
   disabled: z.boolean().optional(),
   roles: z.array(rolePrioritySchema).optional(),

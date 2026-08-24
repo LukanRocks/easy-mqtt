@@ -31,14 +31,12 @@ export function ClientDetailPage({ username }: { username: string }) {
   const { data: client, isLoading, isError } = useQuery(clientQuery(username));
   const roles = useQuery(rolesQuery);
 
-  const [textname, setTextname] = useState("");
   const [textdescription, setTextdescription] = useState("");
   const [password, setPassword] = useState("");
   const [roleToAdd, setRoleToAdd] = useState("");
 
   useEffect(() => {
     if (client) {
-      setTextname(client.textname ?? "");
       setTextdescription(client.textdescription ?? "");
     }
   }, [client]);
@@ -49,7 +47,7 @@ export function ClientDetailPage({ username }: { username: string }) {
   };
 
   const saveDetails = useMutation({
-    mutationFn: () => api.clients.update(username, { textname, textdescription }),
+    mutationFn: () => api.clients.update(username, { textdescription }),
     onSuccess: () => {
       refresh();
       toast.success("Details saved");
@@ -168,10 +166,6 @@ export function ClientDetailPage({ username }: { username: string }) {
               <CardTitle className="text-base">Details</CardTitle>
             </CardHeader>
             <CardContent className="space-y-4">
-              <div className="space-y-2">
-                <Label htmlFor="textname">Display name</Label>
-                <Input id="textname" value={textname} onChange={(e) => setTextname(e.target.value)} />
-              </div>
               <div className="space-y-2">
                 <Label htmlFor="desc">Description</Label>
                 <Input
