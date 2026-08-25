@@ -1,0 +1,18 @@
+version: 2
+updates:
+  - package-ecosystem: 'npm'
+    # Root only: the pnpm workspace has a single lockfile, so root PRs cover
+    # apps/* and packages/*; per-directory PRs skip the lockfile entirely.
+    directory: '/'
+    schedule:
+      interval: 'weekly'
+    # Match pnpm-workspace.yaml minimumReleaseAge (2880 min = 48h)
+    cooldown:
+      default-days: 2
+
+  - package-ecosystem: 'github-actions'
+    directory: '/'
+    schedule:
+      interval: 'weekly'
+    cooldown:
+      default-days: 2
