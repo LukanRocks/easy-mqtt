@@ -1,117 +1,24 @@
 import { useState } from "react";
 import { Link, useNavigate } from "@tanstack/react-router";
 import { useQuery, useQueryClient } from "@tanstack/react-query";
-import { useForm } from "@tanstack/react-form";
 import type { ColumnDef } from "@tanstack/react-table";
-import { MoreHorizontal, Plus, Trash2 } from "lucide-react";
+import { MoreHorizontal, Trash2 } from "lucide-react";
 import { toast } from "sonner";
 import type { Group } from "@easy-mqtt/dynsec";
 import { Badge } from "@/components/ui/badge";
 import { Button } from "@/components/ui/button";
-import {
-  Dialog,
-  DialogContent,
-  DialogDescription,
-  DialogFooter,
-  DialogHeader,
-  DialogTitle,
-  DialogTrigger,
-} from "@/components/ui/dialog";
 import {
   DropdownMenu,
   DropdownMenuContent,
   DropdownMenuItem,
   DropdownMenuTrigger,
 } from "@/components/ui/dropdown-menu";
-import { Input } from "@/components/ui/input";
-import { Label } from "@/components/ui/label";
 import { ConfirmDialog } from "@/components/confirm-dialog";
+import { CreateGroupDialog } from "@/components/create-group-dialog";
 import { DataTable } from "@/components/data-table";
 import { PageHeader } from "@/components/page-header";
 import { api, ApiError } from "@/lib/api";
 import { groupsQuery, queryKeys } from "@/lib/queries";
-
-function CreateGroupDialog() {
-  const [open, setOpen] = useState(false);
-  const queryClient = useQueryClient();
-
-  const form = useForm({
-    defaultValues: { groupname: "", textdescription: "" },
-    onSubmit: async ({ value }) => {
-      try {
-        await api.groups.create({
-          groupname: value.groupname,
-          textdescription: value.textdescription || undefined,
-        });
-        await queryClient.invalidateQueries({ queryKey: queryKeys.groups });
-        toast.success(`Group “${value.groupname}” created`);
-        form.reset();
-        setOpen(false);
-      } catch (err) {
-        toast.error(err instanceof ApiError ? err.message : "Failed to create group");
-      }
-    },
-  });
-
-  return (
-    <Dialog open={open} onOpenChange={setOpen}>
-      <DialogTrigger asChild>
-        <Button>
-          <Plus className="size-4" /> New group
-        </Button>
-      </DialogTrigger>
-      <DialogContent>
-        <DialogHeader>
-          <DialogTitle>New group</DialogTitle>
-          <DialogDescription>Groups bundle roles and apply them to their members.</DialogDescription>
-        </DialogHeader>
-        <form
-          className="space-y-4"
-          onSubmit={(e) => {
-            e.preventDefault();
-            form.handleSubmit();
-          }}
-        >
-          <form.Field name="groupname">
-            {(field) => (
-              <div className="space-y-2">
-                <Label htmlFor="g-name">Group name</Label>
-                <Input
-                  id="g-name"
-                  value={field.state.value}
-                  onChange={(e) => field.handleChange(e.target.value)}
-                  required
-                  autoFocus
-                />
-              </div>
-            )}
-          </form.Field>
-          <form.Field name="textdescription">
-            {(field) => (
-              <div className="space-y-2">
-                <Label htmlFor="g-desc">Description</Label>
-                <Input
-                  id="g-desc"
-                  value={field.state.value}
-                  onChange={(e) => field.handleChange(e.target.value)}
-                />
-              </div>
-            )}
-          </form.Field>
-          <DialogFooter>
-            <form.Subscribe selector={(s) => [s.canSubmit, s.isSubmitting]}>
-              {([canSubmit, isSubmitting]) => (
-                <Button type="submit" disabled={!canSubmit || isSubmitting}>
-                  {isSubmitting ? "Creating…" : "Create group"}
-                </Button>
-              )}
-            </form.Subscribe>
-          </DialogFooter>
-        </form>
-      </DialogContent>
-    </Dialog>
-  );
-}
 
 function GroupRowActions({ group }: { group: Group }) {
   const queryClient = useQueryClient();

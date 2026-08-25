@@ -1,116 +1,23 @@
 import { useState } from "react";
 import { Link, useNavigate } from "@tanstack/react-router";
 import { useQuery, useQueryClient } from "@tanstack/react-query";
-import { useForm } from "@tanstack/react-form";
 import type { ColumnDef } from "@tanstack/react-table";
-import { MoreHorizontal, Plus, Trash2 } from "lucide-react";
+import { MoreHorizontal, Trash2 } from "lucide-react";
 import { toast } from "sonner";
 import type { Role } from "@easy-mqtt/dynsec";
 import { Button } from "@/components/ui/button";
-import {
-  Dialog,
-  DialogContent,
-  DialogDescription,
-  DialogFooter,
-  DialogHeader,
-  DialogTitle,
-  DialogTrigger,
-} from "@/components/ui/dialog";
 import {
   DropdownMenu,
   DropdownMenuContent,
   DropdownMenuItem,
   DropdownMenuTrigger,
 } from "@/components/ui/dropdown-menu";
-import { Input } from "@/components/ui/input";
-import { Label } from "@/components/ui/label";
 import { ConfirmDialog } from "@/components/confirm-dialog";
+import { CreateRoleDialog } from "@/components/create-role-dialog";
 import { DataTable } from "@/components/data-table";
 import { PageHeader } from "@/components/page-header";
 import { api, ApiError } from "@/lib/api";
 import { queryKeys, rolesQuery } from "@/lib/queries";
-
-function CreateRoleDialog() {
-  const [open, setOpen] = useState(false);
-  const queryClient = useQueryClient();
-
-  const form = useForm({
-    defaultValues: { rolename: "", textdescription: "" },
-    onSubmit: async ({ value }) => {
-      try {
-        await api.roles.create({
-          rolename: value.rolename,
-          textdescription: value.textdescription || undefined,
-        });
-        await queryClient.invalidateQueries({ queryKey: queryKeys.roles });
-        toast.success(`Role “${value.rolename}” created`);
-        form.reset();
-        setOpen(false);
-      } catch (err) {
-        toast.error(err instanceof ApiError ? err.message : "Failed to create role");
-      }
-    },
-  });
-
-  return (
-    <Dialog open={open} onOpenChange={setOpen}>
-      <DialogTrigger asChild>
-        <Button>
-          <Plus className="size-4" /> New role
-        </Button>
-      </DialogTrigger>
-      <DialogContent>
-        <DialogHeader>
-          <DialogTitle>New role</DialogTitle>
-          <DialogDescription>Roles hold the ACLs that grant or deny topic access.</DialogDescription>
-        </DialogHeader>
-        <form
-          className="space-y-4"
-          onSubmit={(e) => {
-            e.preventDefault();
-            form.handleSubmit();
-          }}
-        >
-          <form.Field name="rolename">
-            {(field) => (
-              <div className="space-y-2">
-                <Label htmlFor="r-name">Role name</Label>
-                <Input
-                  id="r-name"
-                  value={field.state.value}
-                  onChange={(e) => field.handleChange(e.target.value)}
-                  required
-                  autoFocus
-                />
-              </div>
-            )}
-          </form.Field>
-          <form.Field name="textdescription">
-            {(field) => (
-              <div className="space-y-2">
-                <Label htmlFor="r-desc">Description</Label>
-                <Input
-                  id="r-desc"
-                  value={field.state.value}
-                  onChange={(e) => field.handleChange(e.target.value)}
-                />
-              </div>
-            )}
-          </form.Field>
-          <DialogFooter>
-            <form.Subscribe selector={(s) => [s.canSubmit, s.isSubmitting]}>
-              {([canSubmit, isSubmitting]) => (
-                <Button type="submit" disabled={!canSubmit || isSubmitting}>
-                  {isSubmitting ? "Creating…" : "Create role"}
-                </Button>
-              )}
-            </form.Subscribe>
-          </DialogFooter>
-        </form>
-      </DialogContent>
-    </Dialog>
-  );
-}
 
 function RoleRowActions({ role }: { role: Role }) {
   const queryClient = useQueryClient();

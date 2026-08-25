@@ -1,20 +1,14 @@
 import { Link } from "@tanstack/react-router";
 import { useQuery } from "@tanstack/react-query";
-import { Boxes, Plus, ShieldCheck, UserCog, Users } from "lucide-react";
-import { DEFAULT_ACL_TYPES } from "@easy-mqtt/dynsec";
-import { Badge } from "@/components/ui/badge";
+import { Boxes, Plus, ShieldCheck, Users } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Skeleton } from "@/components/ui/skeleton";
+import { CreateClientDialog } from "@/components/create-client-dialog";
+import { CreateGroupDialog } from "@/components/create-group-dialog";
+import { CreateRoleDialog } from "@/components/create-role-dialog";
 import { PageHeader } from "@/components/page-header";
-import { clientsQuery, defaultAclQuery, groupsQuery, rolesQuery } from "@/lib/queries";
-
-const ACL_LABELS: Record<string, string> = {
-  publishClientSend: "Publish (send)",
-  publishClientReceive: "Publish (receive)",
-  subscribe: "Subscribe",
-  unsubscribe: "Unsubscribe",
-};
+import { clientsQuery, groupsQuery, rolesQuery } from "@/lib/queries";
 
 function StatCard({
   label,
@@ -54,7 +48,6 @@ export function DashboardPage() {
   const clients = useQuery(clientsQuery);
   const groups = useQuery(groupsQuery);
   const roles = useQuery(rolesQuery);
-  const defaultAcl = useQuery(defaultAclQuery);
 
   return (
     <>
@@ -86,46 +79,30 @@ export function DashboardPage() {
 
       <Card>
         <CardHeader>
-          <CardTitle className="text-base">Default ACL access</CardTitle>
-        </CardHeader>
-        <CardContent className="space-y-2">
-          {defaultAcl.isLoading ? (
-            <Skeleton className="h-24 w-full" />
-          ) : (
-            DEFAULT_ACL_TYPES.map((type) => {
-              const acl = defaultAcl.data?.find((a) => a.acltype === type);
-              const allow = acl?.allow ?? false;
-              return (
-                <div key={type} className="flex items-center justify-between text-sm">
-                  <span className="text-muted-foreground">{ACL_LABELS[type] ?? type}</span>
-                  <Badge variant={allow ? "success" : "muted"}>{allow ? "Allow" : "Deny"}</Badge>
-                </div>
-              );
-            })
-          )}
-        </CardContent>
-      </Card>
-
-      <Card>
-        <CardHeader>
           <CardTitle className="text-base">Quick actions</CardTitle>
         </CardHeader>
         <CardContent className="flex flex-wrap gap-3">
-          <Button asChild variant="outline">
-            <Link to="/clients">
-              <UserCog className="size-4" /> Manage clients
-            </Link>
-          </Button>
-          <Button asChild variant="outline">
-            <Link to="/groups">
-              <Plus className="size-4" /> New group
-            </Link>
-          </Button>
-          <Button asChild variant="outline">
-            <Link to="/roles">
-              <Plus className="size-4" /> New role
-            </Link>
-          </Button>
+          <CreateClientDialog
+            trigger={
+              <Button variant="outline">
+                <Plus className="size-4" /> New client
+              </Button>
+            }
+          />
+          <CreateGroupDialog
+            trigger={
+              <Button variant="outline">
+                <Plus className="size-4" /> New group
+              </Button>
+            }
+          />
+          <CreateRoleDialog
+            trigger={
+              <Button variant="outline">
+                <Plus className="size-4" /> New role
+              </Button>
+            }
+          />
         </CardContent>
       </Card>
     </>
