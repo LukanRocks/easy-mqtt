@@ -1,9 +1,6 @@
 services:
   easy-mqtt:
-    build:
-      context: .
-      dockerfile: docker/Dockerfile
-    image: easy-mqtt:latest
+    image: ghcr.io/lukanrocks/easy-mqtt:latest
     container_name: easy-mqtt
     restart: unless-stopped
     environment:
