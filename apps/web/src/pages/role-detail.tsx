@@ -51,7 +51,6 @@ export function RoleDetailPage({ rolename }: { rolename: string }) {
   const queryClient = useQueryClient();
   const { data: role, isLoading, isError } = useQuery(roleQuery(rolename));
 
-  const [textname, setTextname] = useState("");
   const [textdescription, setTextdescription] = useState("");
 
   const [acltype, setAcltype] = useState<AclType>("subscribePattern");
@@ -61,7 +60,6 @@ export function RoleDetailPage({ rolename }: { rolename: string }) {
 
   useEffect(() => {
     if (role) {
-      setTextname(role.textname ?? "");
       setTextdescription(role.textdescription ?? "");
     }
   }, [role]);
@@ -72,7 +70,7 @@ export function RoleDetailPage({ rolename }: { rolename: string }) {
   };
 
   const saveDetails = useMutation({
-    mutationFn: () => api.roles.update(rolename, { textname, textdescription }),
+    mutationFn: () => api.roles.update(rolename, { textdescription }),
     onSuccess: () => {
       refresh();
       toast.success("Details saved");
@@ -153,11 +151,7 @@ export function RoleDetailPage({ rolename }: { rolename: string }) {
             <CardHeader>
               <CardTitle className="text-base">Details</CardTitle>
             </CardHeader>
-            <CardContent className="grid gap-4 sm:grid-cols-2">
-              <div className="space-y-2">
-                <Label htmlFor="textname">Display name</Label>
-                <Input id="textname" value={textname} onChange={(e) => setTextname(e.target.value)} />
-              </div>
+            <CardContent className="space-y-4">
               <div className="space-y-2">
                 <Label htmlFor="desc">Description</Label>
                 <Input
@@ -166,11 +160,9 @@ export function RoleDetailPage({ rolename }: { rolename: string }) {
                   onChange={(e) => setTextdescription(e.target.value)}
                 />
               </div>
-              <div>
-                <Button onClick={() => saveDetails.mutate()} disabled={saveDetails.isPending}>
-                  {saveDetails.isPending ? "Saving…" : "Save details"}
-                </Button>
-              </div>
+              <Button onClick={() => saveDetails.mutate()} disabled={saveDetails.isPending}>
+                {saveDetails.isPending ? "Saving…" : "Save details"}
+              </Button>
             </CardContent>
           </Card>
 

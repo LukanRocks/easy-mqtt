@@ -47,7 +47,8 @@ export const addGroupClientSchema = z.object({ username: z.string().min(1), prio
 
 export const createRoleSchema = z.object({
   rolename: z.string().min(1),
-  textname: z.string().optional(),
+  // Roles have no display name (textname) — the role name is the identity and
+  // the description explains its purpose. Mirrors the clients/groups decision.
   textdescription: z.string().optional(),
   acls: z
     .array(

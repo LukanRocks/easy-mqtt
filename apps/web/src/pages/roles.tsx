@@ -3,7 +3,7 @@ import { Link, useNavigate } from "@tanstack/react-router";
 import { useQuery, useQueryClient } from "@tanstack/react-query";
 import { useForm } from "@tanstack/react-form";
 import type { ColumnDef } from "@tanstack/react-table";
-import { Plus, Trash2 } from "lucide-react";
+import { MoreHorizontal, Plus, Trash2 } from "lucide-react";
 import { toast } from "sonner";
 import type { Role } from "@easy-mqtt/dynsec";
 import { Button } from "@/components/ui/button";
@@ -16,6 +16,12 @@ import {
   DialogTitle,
   DialogTrigger,
 } from "@/components/ui/dialog";
+import {
+  DropdownMenu,
+  DropdownMenuContent,
+  DropdownMenuItem,
+  DropdownMenuTrigger,
+} from "@/components/ui/dropdown-menu";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
 import { ConfirmDialog } from "@/components/confirm-dialog";
@@ -29,12 +35,11 @@ function CreateRoleDialog() {
   const queryClient = useQueryClient();
 
   const form = useForm({
-    defaultValues: { rolename: "", textname: "", textdescription: "" },
+    defaultValues: { rolename: "", textdescription: "" },
     onSubmit: async ({ value }) => {
       try {
         await api.roles.create({
           rolename: value.rolename,
-          textname: value.textname || undefined,
           textdescription: value.textdescription || undefined,
         });
         await queryClient.invalidateQueries({ queryKey: queryKeys.roles });
@@ -80,18 +85,6 @@ function CreateRoleDialog() {
               </div>
             )}
           </form.Field>
-          <form.Field name="textname">
-            {(field) => (
-              <div className="space-y-2">
-                <Label htmlFor="r-textname">Display name</Label>
-                <Input
-                  id="r-textname"
-                  value={field.state.value}
-                  onChange={(e) => field.handleChange(e.target.value)}
-                />
-              </div>
-            )}
-          </form.Field>
           <form.Field name="textdescription">
             {(field) => (
               <div className="space-y-2">
@@ -119,9 +112,55 @@ function CreateRoleDialog() {
   );
 }
 
+function RoleRowActions({ role }: { role: Role }) {
+  const queryClient = useQueryClient();
+  const [menuOpen, setMenuOpen] = useState(false);
+  const [confirmOpen, setConfirmOpen] = useState(false);
+
+  return (
+    <div className="flex justify-end" onClick={(e) => e.stopPropagation()}>
+      <DropdownMenu open={menuOpen} onOpenChange={setMenuOpen}>
+        <DropdownMenuTrigger asChild>
+          <Button variant="ghost" size="icon" title="Actions">
+            <MoreHorizontal className="size-4" />
+            <span className="sr-only">Open actions</span>
+          </Button>
+        </DropdownMenuTrigger>
+        <DropdownMenuContent align="end">
+          <DropdownMenuItem
+            className="text-destructive focus:text-destructive"
+            onSelect={(e) => {
+              e.preventDefault();
+              setMenuOpen(false);
+              setConfirmOpen(true);
+            }}
+          >
+            <Trash2 />
+            Delete
+          </DropdownMenuItem>
+        </DropdownMenuContent>
+      </DropdownMenu>
+      <ConfirmDialog
+        open={confirmOpen}
+        onOpenChange={setConfirmOpen}
+        title={`Delete role “${role.rolename}”?`}
+        confirmLabel="Delete"
+        onConfirm={async () => {
+          try {
+            await api.roles.remove(role.rolename);
+            queryClient.invalidateQueries({ queryKey: queryKeys.roles });
+            toast.success("Role deleted");
+          } catch (e) {
+            toast.error(e instanceof ApiError ? e.message : "Delete failed");
+          }
+        }}
+      />
+    </div>
+  );
+}
+
 export function RolesPage() {
   const navigate = useNavigate();
-  const queryClient = useQueryClient();
   const { data, isLoading } = useQuery(rolesQuery);
 
   const columns: ColumnDef<Role>[] = [
@@ -140,10 +179,10 @@ export function RolesPage() {
       ),
     },
     {
-      accessorKey: "textname",
-      header: "Display name",
+      accessorKey: "textdescription",
+      header: "Description",
       cell: ({ row }) => (
-        <span className="text-muted-foreground">{row.original.textname || "—"}</span>
+        <span className="text-muted-foreground">{row.original.textdescription || "—"}</span>
       ),
     },
     {
@@ -156,28 +195,7 @@ export function RolesPage() {
     {
       id: "actions",
       header: () => <span className="sr-only">Actions</span>,
-      cell: ({ row }) => (
-        <div className="flex justify-end" onClick={(e) => e.stopPropagation()}>
-          <ConfirmDialog
-            trigger={
-              <Button variant="ghost" size="icon" title="Delete">
-                <Trash2 className="size-4 text-destructive" />
-              </Button>
-            }
-            title={`Delete role “${row.original.rolename}”?`}
-            confirmLabel="Delete"
-            onConfirm={async () => {
-              try {
-                await api.roles.remove(row.original.rolename);
-                queryClient.invalidateQueries({ queryKey: queryKeys.roles });
-                toast.success("Role deleted");
-              } catch (e) {
-                toast.error(e instanceof ApiError ? e.message : "Delete failed");
-              }
-            }}
-          />
-        </div>
-      ),
+      cell: ({ row }) => <RoleRowActions role={row.original} />,
     },
   ];
 
