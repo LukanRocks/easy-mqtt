@@ -27,8 +27,9 @@ FROM eclipse-mosquitto:2 AS runtime
 ARG S6_OVERLAY_VERSION=3.2.1.0
 ARG TARGETARCH
 
-# Node runtime for the admin app. mosquitto_ctrl ships in the base image.
-RUN apk add --no-cache nodejs
+# Node runtime for the admin app; jq for first-run role seeding in bootstrap.
+# mosquitto_ctrl ships in the base image.
+RUN apk add --no-cache nodejs jq
 
 # s6-overlay: process supervisor / PID 1.
 ADD https://github.com/just-containers/s6-overlay/releases/download/v${S6_OVERLAY_VERSION}/s6-overlay-noarch.tar.xz /tmp/s6-noarch.tar.xz

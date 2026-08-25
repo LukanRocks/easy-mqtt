@@ -55,6 +55,17 @@ Then open the admin UI at **http://localhost:8080** and sign in with the
 - MQTT for real devices: **`localhost:1883`**
 - All data persists under `./data` on the host or the specified path.
 
+**First-run seeding.** On first start the broker is initialized with:
+
+- an **`admin`** client (holds the `admin` role) — this is the account you log
+  into the UI with;
+- a **`devices`** role granting publish + subscribe on all application topics
+  (`#`, which excludes `$SYS`/`$CONTROL`).
+
+Create a client for each device and assign it the **`devices`** role and it can
+publish/subscribe immediately. Tighten or replace that role at any time from the
+Roles screen — it's only a starting point, seeded once.
+
 Add TLS or websocket listeners by dropping a `.conf` file into `data/conf.d/`
 (see `data/conf.d/tls.conf.example`, created on first run) — no rebuild needed.
 

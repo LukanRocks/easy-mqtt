@@ -48,6 +48,33 @@ $PASS
 $PASS
 EOF
 
+  # Post-process the freshly initialized ACL DB offline (the broker isn't
+  # running yet) with jq: give the admin role a description, and seed a default
+  # "devices" role operators can assign to new clients so they work immediately.
+  # `dynsec init` only creates the admin client/role. The "devices" role grants
+  # publish + subscribe on all application topics ("#" excludes $SYS/$CONTROL).
+  # Both changes only apply when absent, never overwriting existing values.
+  DSFILE="$DATA_DIR/dynamic-security.json"
+  TMPFILE="$(mktemp)"
+  jq '
+    .roles |= map(
+      if .rolename == "admin" and (has("textdescription") | not)
+      then . + {"textdescription": "Full dynamic-security administration access"}
+      else . end
+    )
+    | if any(.roles[]?; .rolename == "devices") then .
+      else .roles += [{
+        "rolename": "devices",
+        "textdescription": "Basic device access: publish and subscribe on all application topics",
+        "allowwildcardsubs": true,
+        "acls": [
+          {"acltype": "publishClientSend",    "topic": "#", "priority": 0, "allow": true},
+          {"acltype": "publishClientReceive", "topic": "#", "priority": 0, "allow": true},
+          {"acltype": "subscribePattern",     "topic": "#", "priority": 0, "allow": true}
+        ]
+      }] end
+  ' "$DSFILE" > "$TMPFILE" && mv "$TMPFILE" "$DSFILE" || rm -f "$TMPFILE"
+
   echo "============================================================"
   echo " easy-mqtt: dynamic-security admin created"
   echo "   username: $USER"
@@ -57,6 +84,7 @@ EOF
   else
     echo "   password: (from DYNSEC_ADMIN_PASSWORD)"
   fi
+  echo " seeded role:  devices  (publish + subscribe on all app topics)"
   echo "============================================================"
 fi
 

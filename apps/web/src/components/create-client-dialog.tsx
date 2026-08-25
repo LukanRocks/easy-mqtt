@@ -1,9 +1,10 @@
 import { type ReactNode, useState } from "react";
 import { useNavigate } from "@tanstack/react-router";
-import { useQueryClient } from "@tanstack/react-query";
+import { useQuery, useQueryClient } from "@tanstack/react-query";
 import { useForm } from "@tanstack/react-form";
 import { Plus } from "lucide-react";
 import { toast } from "sonner";
+import { Badge } from "@/components/ui/badge";
 import { Button } from "@/components/ui/button";
 import {
   Dialog,
@@ -17,17 +18,20 @@ import {
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
 import { api, ApiError } from "@/lib/api";
-import { queryKeys } from "@/lib/queries";
+import { queryKeys, rolesQuery } from "@/lib/queries";
 
 /**
  * Create-client modal. Renders its own "New client" trigger by default; pass a
- * `trigger` to drive it from elsewhere (e.g. dashboard quick actions). On
- * success it navigates to the new client's detail page.
+ * `trigger` to drive it from elsewhere (e.g. dashboard quick actions). Roles can
+ * be assigned at creation. On success it navigates to the new client's detail
+ * page.
  */
 export function CreateClientDialog({ trigger }: { trigger?: ReactNode }) {
   const [open, setOpen] = useState(false);
+  const [roles, setRoles] = useState<string[]>([]);
   const navigate = useNavigate();
   const queryClient = useQueryClient();
+  const availableRoles = useQuery(rolesQuery);
 
   const form = useForm({
     defaultValues: { username: "", password: "", textdescription: "" },
@@ -37,10 +41,12 @@ export function CreateClientDialog({ trigger }: { trigger?: ReactNode }) {
           username: value.username,
           password: value.password || undefined,
           textdescription: value.textdescription || undefined,
+          roles: roles.length ? roles.map((rolename) => ({ rolename, priority: -1 })) : undefined,
         });
         queryClient.invalidateQueries({ queryKey: queryKeys.clients });
         toast.success(`Client “${value.username}” created`);
         form.reset();
+        setRoles([]);
         setOpen(false);
         navigate({ to: "/clients/$username", params: { username: value.username } });
       } catch (err) {
@@ -49,8 +55,22 @@ export function CreateClientDialog({ trigger }: { trigger?: ReactNode }) {
     },
   });
 
+  function handleOpenChange(next: boolean) {
+    if (!next) {
+      form.reset();
+      setRoles([]);
+    }
+    setOpen(next);
+  }
+
+  function toggleRole(rolename: string) {
+    setRoles((prev) =>
+      prev.includes(rolename) ? prev.filter((r) => r !== rolename) : [...prev, rolename],
+    );
+  }
+
   return (
-    <Dialog open={open} onOpenChange={setOpen}>
+    <Dialog open={open} onOpenChange={handleOpenChange}>
       <DialogTrigger asChild>
         {trigger ?? (
           <Button>
@@ -110,6 +130,35 @@ export function CreateClientDialog({ trigger }: { trigger?: ReactNode }) {
               </div>
             )}
           </form.Field>
+          <div className="space-y-2">
+            <Label>Roles</Label>
+            {availableRoles.data?.items.length ? (
+              <div className="flex flex-wrap gap-2">
+                {availableRoles.data.items.map((role) => {
+                  const selected = roles.includes(role.rolename);
+                  return (
+                    <button
+                      key={role.rolename}
+                      type="button"
+                      onClick={() => toggleRole(role.rolename)}
+                      aria-pressed={selected}
+                    >
+                      <Badge
+                        variant={selected ? "default" : "outline"}
+                        className="cursor-pointer select-none"
+                      >
+                        {role.rolename}
+                      </Badge>
+                    </button>
+                  );
+                })}
+              </div>
+            ) : (
+              <p className="text-sm text-muted-foreground">
+                No roles yet — you can assign roles later.
+              </p>
+            )}
+          </div>
           <DialogFooter>
             <form.Subscribe selector={(s) => [s.canSubmit, s.isSubmitting]}>
               {([canSubmit, isSubmitting]) => (
