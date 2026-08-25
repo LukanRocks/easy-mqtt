@@ -1,6 +1,6 @@
-export { DynsecClient } from "./client.js";
-export type { DynsecClientOptions } from "./client.js";
-export { DynsecError, DynsecProtocolError, DynsecTimeoutError } from "./errors.js";
-export { topicMatches, resolveAccess } from "./access.js";
-export type { RoleAccess } from "./access.js";
-export * from "./schemas.js";
+export { DynsecClient } from './client.js'
+export type { DynsecClientOptions } from './client.js'
+export { DynsecError, DynsecProtocolError, DynsecTimeoutError } from './errors.js'
+export { topicMatches, resolveAccess } from './access.js'
+export type { RoleAccess } from './access.js'
+export * from './schemas.js'

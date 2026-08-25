@@ -1,35 +1,28 @@
-import type { MqttClient } from "mqtt";
-import { DynsecError, DynsecProtocolError, DynsecTimeoutError } from "./errors.js";
-import type {
-  Acl,
-  AclType,
-  Client,
-  Group,
-  ListResponse,
-  Role,
-} from "./schemas.js";
+import type { MqttClient } from 'mqtt'
+import { DynsecError, DynsecProtocolError, DynsecTimeoutError } from './errors.js'
+import type { Acl, AclType, Client, Group, ListResponse, Role } from './schemas.js'
 
-const CONTROL_TOPIC = "$CONTROL/dynamic-security/v1";
-const RESPONSE_TOPIC = "$CONTROL/dynamic-security/v1/response";
+const CONTROL_TOPIC = '$CONTROL/dynamic-security/v1'
+const RESPONSE_TOPIC = '$CONTROL/dynamic-security/v1/response'
 
 /** A single dynsec response entry (one per command in the request). */
 interface DynsecResponse {
-  command: string;
-  correlationData?: string;
-  error?: string;
-  data?: Record<string, unknown>;
+  command: string
+  correlationData?: string
+  error?: string
+  data?: Record<string, unknown>
 }
 
 interface Pending {
-  command: string;
-  resolve: (value: DynsecResponse) => void;
-  reject: (error: Error) => void;
-  timer: ReturnType<typeof setTimeout>;
+  command: string
+  resolve: (value: DynsecResponse) => void
+  reject: (error: Error) => void
+  timer: ReturnType<typeof setTimeout>
 }
 
 export interface DynsecClientOptions {
   /** Per-command timeout in milliseconds. Defaults to 5000. */
-  timeoutMs?: number;
+  timeoutMs?: number
 }
 
 /**
@@ -46,140 +39,138 @@ export interface DynsecClientOptions {
  * `correlationData`, it falls back to first-in-flight-by-command-name matching.
  */
 export class DynsecClient {
-  private readonly mqtt: MqttClient;
-  private readonly timeoutMs: number;
-  private readonly pending = new Map<string, Pending>();
-  private subscribed = false;
-  private subscribing?: Promise<void>;
-  private readonly onMessage: (topic: string, payload: Buffer) => void;
+  private readonly mqtt: MqttClient
+  private readonly timeoutMs: number
+  private readonly pending = new Map<string, Pending>()
+  private subscribed = false
+  private subscribing?: Promise<void>
+  private readonly onMessage: (topic: string, payload: Buffer) => void
 
   constructor(mqtt: MqttClient, options: DynsecClientOptions = {}) {
-    this.mqtt = mqtt;
-    this.timeoutMs = options.timeoutMs ?? 5000;
-    this.onMessage = (topic, payload) => this.handleMessage(topic, payload);
-    this.mqtt.on("message", this.onMessage);
+    this.mqtt = mqtt
+    this.timeoutMs = options.timeoutMs ?? 5000
+    this.onMessage = (topic, payload) => this.handleMessage(topic, payload)
+    this.mqtt.on('message', this.onMessage)
   }
 
   /** Detach listeners and reject any outstanding calls. */
   dispose(): void {
-    this.mqtt.removeListener("message", this.onMessage);
+    this.mqtt.removeListener('message', this.onMessage)
     for (const [, entry] of this.pending) {
-      clearTimeout(entry.timer);
-      entry.reject(new DynsecError("client disposed"));
+      clearTimeout(entry.timer)
+      entry.reject(new DynsecError('client disposed'))
     }
-    this.pending.clear();
+    this.pending.clear()
   }
 
   private async ensureSubscribed(): Promise<void> {
-    if (this.subscribed) return;
+    if (this.subscribed) return
     if (!this.subscribing) {
       this.subscribing = this.mqtt
         .subscribeAsync(RESPONSE_TOPIC)
         .then(() => {
-          this.subscribed = true;
+          this.subscribed = true
         })
         .finally(() => {
-          this.subscribing = undefined;
-        });
+          this.subscribing = undefined
+        })
     }
-    await this.subscribing;
+    await this.subscribing
   }
 
   private async execute(command: Record<string, unknown>): Promise<DynsecResponse> {
-    await this.ensureSubscribed();
-    const id = crypto.randomUUID();
-    const commandName = String(command.command);
+    await this.ensureSubscribed()
+    const id = crypto.randomUUID()
+    const commandName = String(command.command)
     const payload = JSON.stringify({
       commands: [{ ...command, correlationData: id }],
-    });
+    })
 
     const response = new Promise<DynsecResponse>((resolve, reject) => {
       const timer = setTimeout(() => {
         if (this.pending.delete(id)) {
-          reject(new DynsecTimeoutError(this.timeoutMs));
+          reject(new DynsecTimeoutError(this.timeoutMs))
         }
-      }, this.timeoutMs);
-      this.pending.set(id, { command: commandName, resolve, reject, timer });
-    });
+      }, this.timeoutMs)
+      this.pending.set(id, { command: commandName, resolve, reject, timer })
+    })
 
     try {
-      await this.mqtt.publishAsync(CONTROL_TOPIC, payload);
+      await this.mqtt.publishAsync(CONTROL_TOPIC, payload)
     } catch (err) {
-      const entry = this.pending.get(id);
+      const entry = this.pending.get(id)
       if (entry) {
-        clearTimeout(entry.timer);
-        this.pending.delete(id);
+        clearTimeout(entry.timer)
+        this.pending.delete(id)
       }
-      throw err;
+      throw err
     }
 
-    const result = await response;
+    const result = await response
     if (result.error != null) {
-      throw new DynsecError(result.error, result);
+      throw new DynsecError(result.error, result)
     }
-    return result;
+    return result
   }
 
   private handleMessage(topic: string, payload: Buffer): void {
-    if (topic !== RESPONSE_TOPIC) return;
+    if (topic !== RESPONSE_TOPIC) return
 
-    let parsed: { responses?: DynsecResponse[] };
+    let parsed: { responses?: DynsecResponse[] }
     try {
-      parsed = JSON.parse(payload.toString());
+      parsed = JSON.parse(payload.toString())
     } catch {
-      this.rejectAll(new DynsecProtocolError("invalid JSON response", payload.toString()));
-      return;
+      this.rejectAll(new DynsecProtocolError('invalid JSON response', payload.toString()))
+      return
     }
 
-    const responses = parsed.responses;
+    const responses = parsed.responses
     if (!Array.isArray(responses)) {
-      this.rejectAll(
-        new DynsecProtocolError("response missing 'responses' array", payload.toString()),
-      );
-      return;
+      this.rejectAll(new DynsecProtocolError("response missing 'responses' array", payload.toString()))
+      return
     }
 
     for (const response of responses) {
-      const entry = this.match(response);
-      if (!entry) continue;
-      clearTimeout(entry.timer);
-      entry.resolve(response);
+      const entry = this.match(response)
+      if (!entry) continue
+      clearTimeout(entry.timer)
+      entry.resolve(response)
     }
   }
 
   /** Match a response to a pending call by correlationData, else by command name. */
   private match(response: DynsecResponse): Pending | undefined {
-    const id = response.correlationData;
+    const id = response.correlationData
     if (id && this.pending.has(id)) {
-      const entry = this.pending.get(id)!;
-      this.pending.delete(id);
-      return entry;
+      const entry = this.pending.get(id)!
+      this.pending.delete(id)
+      return entry
     }
     // Fallback for brokers that don't echo correlationData: first in-flight
     // call with the same command name.
     for (const [key, entry] of this.pending) {
       if (entry.command === response.command) {
-        this.pending.delete(key);
-        return entry;
+        this.pending.delete(key)
+        return entry
       }
     }
-    return undefined;
+    return undefined
   }
 
   private rejectAll(error: Error): void {
     for (const [id, entry] of this.pending) {
-      clearTimeout(entry.timer);
-      this.pending.delete(id);
-      entry.reject(error);
+      clearTimeout(entry.timer)
+      this.pending.delete(id)
+      entry.reject(error)
     }
   }
 
   private requireData<T>(response: DynsecResponse, key: string): T {
-    const value = response.data?.[key];
+    const value = response.data?.[key]
     if (value === undefined || value === null) {
-      throw new DynsecProtocolError(`'${key}' property missing`, JSON.stringify(response));
+      throw new DynsecProtocolError(`'${key}' property missing`, JSON.stringify(response))
     }
-    return value as T;
+    return value as T
   }
 
   // ---------------------------------------------------------------------------
@@ -187,12 +178,12 @@ export class DynsecClient {
   // ---------------------------------------------------------------------------
 
   async getDefaultAclAccess(): Promise<Acl[]> {
-    const r = await this.execute({ command: "getDefaultACLAccess" });
-    return this.requireData<Acl[]>(r, "acls");
+    const r = await this.execute({ command: 'getDefaultACLAccess' })
+    return this.requireData<Acl[]>(r, 'acls')
   }
 
   async setDefaultAclAccess(acls: Acl[]): Promise<void> {
-    await this.execute({ command: "setDefaultACLAccess", acls });
+    await this.execute({ command: 'setDefaultACLAccess', acls })
   }
 
   // ---------------------------------------------------------------------------
@@ -200,58 +191,54 @@ export class DynsecClient {
   // ---------------------------------------------------------------------------
 
   async createClient(client: Client): Promise<void> {
-    await this.execute({ command: "createClient", ...client });
+    await this.execute({ command: 'createClient', ...client })
   }
 
   async deleteClient(username: string): Promise<void> {
-    await this.execute({ command: "deleteClient", username });
+    await this.execute({ command: 'deleteClient', username })
   }
 
   async enableClient(username: string): Promise<void> {
-    await this.execute({ command: "enableClient", username });
+    await this.execute({ command: 'enableClient', username })
   }
 
   async disableClient(username: string): Promise<void> {
-    await this.execute({ command: "disableClient", username });
+    await this.execute({ command: 'disableClient', username })
   }
 
   async getClient(username: string): Promise<Client> {
-    const r = await this.execute({ command: "getClient", username });
-    return this.requireData<Client>(r, "client");
+    const r = await this.execute({ command: 'getClient', username })
+    return this.requireData<Client>(r, 'client')
   }
 
-  async listClients(verbose: false, count?: number, offset?: number): Promise<ListResponse<string>>;
-  async listClients(verbose: true, count?: number, offset?: number): Promise<ListResponse<Client>>;
-  async listClients(
-    verbose = false,
-    count = -1,
-    offset = 0,
-  ): Promise<ListResponse<string> | ListResponse<Client>> {
-    const r = await this.execute({ command: "listClients", verbose, count, offset });
+  async listClients(verbose: false, count?: number, offset?: number): Promise<ListResponse<string>>
+  async listClients(verbose: true, count?: number, offset?: number): Promise<ListResponse<Client>>
+  async listClients(verbose = false, count = -1, offset = 0): Promise<ListResponse<string> | ListResponse<Client>> {
+    const r = await this.execute({ command: 'listClients', verbose, count, offset })
     return {
-      items: this.requireData<string[] | Client[]>(r, "clients"),
-      total: this.requireData<number>(r, "totalCount"),
-    } as ListResponse<string> | ListResponse<Client>;
+      items: this.requireData<string[] | Client[]>(r, 'clients'),
+      total: this.requireData<number>(r, 'totalCount'),
+    } as ListResponse<string> | ListResponse<Client>
   }
 
   async modifyClient(client: Client): Promise<void> {
-    await this.execute({ command: "modifyClient", ...client });
+    await this.execute({ command: 'modifyClient', ...client })
   }
 
   async setClientId(username: string, clientid: string): Promise<void> {
-    await this.execute({ command: "setClientId", username, clientid });
+    await this.execute({ command: 'setClientId', username, clientid })
   }
 
   async setClientPassword(username: string, password: string): Promise<void> {
-    await this.execute({ command: "setClientPassword", username, password });
+    await this.execute({ command: 'setClientPassword', username, password })
   }
 
   async addClientRole(username: string, rolename: string, priority = -1): Promise<void> {
-    await this.execute({ command: "addClientRole", username, rolename, priority });
+    await this.execute({ command: 'addClientRole', username, rolename, priority })
   }
 
   async removeClientRole(username: string, rolename: string): Promise<void> {
-    await this.execute({ command: "removeClientRole", username, rolename });
+    await this.execute({ command: 'removeClientRole', username, rolename })
   }
 
   // ---------------------------------------------------------------------------
@@ -259,63 +246,59 @@ export class DynsecClient {
   // ---------------------------------------------------------------------------
 
   async createGroup(group: Group): Promise<void> {
-    await this.execute({ command: "createGroup", ...group });
+    await this.execute({ command: 'createGroup', ...group })
   }
 
   async deleteGroup(groupname: string): Promise<void> {
-    await this.execute({ command: "deleteGroup", groupname });
+    await this.execute({ command: 'deleteGroup', groupname })
   }
 
   async getGroup(groupname: string): Promise<Group> {
-    const r = await this.execute({ command: "getGroup", groupname });
-    return this.requireData<Group>(r, "group");
+    const r = await this.execute({ command: 'getGroup', groupname })
+    return this.requireData<Group>(r, 'group')
   }
 
-  async listGroups(verbose: false, count?: number, offset?: number): Promise<ListResponse<string>>;
-  async listGroups(verbose: true, count?: number, offset?: number): Promise<ListResponse<Group>>;
-  async listGroups(
-    verbose = false,
-    count = -1,
-    offset = 0,
-  ): Promise<ListResponse<string> | ListResponse<Group>> {
-    const r = await this.execute({ command: "listGroups", verbose, count, offset });
+  async listGroups(verbose: false, count?: number, offset?: number): Promise<ListResponse<string>>
+  async listGroups(verbose: true, count?: number, offset?: number): Promise<ListResponse<Group>>
+  async listGroups(verbose = false, count = -1, offset = 0): Promise<ListResponse<string> | ListResponse<Group>> {
+    const r = await this.execute({ command: 'listGroups', verbose, count, offset })
     return {
-      items: this.requireData<string[] | Group[]>(r, "groups"),
-      total: this.requireData<number>(r, "totalCount"),
-    } as ListResponse<string> | ListResponse<Group>;
+      items: this.requireData<string[] | Group[]>(r, 'groups'),
+      total: this.requireData<number>(r, 'totalCount'),
+    } as ListResponse<string> | ListResponse<Group>
   }
 
   async modifyGroup(group: Group): Promise<void> {
-    await this.execute({ command: "modifyGroup", ...group });
+    await this.execute({ command: 'modifyGroup', ...group })
   }
 
   async addGroupClient(groupname: string, username: string, priority = -1): Promise<void> {
-    await this.execute({ command: "addGroupClient", groupname, username, priority });
+    await this.execute({ command: 'addGroupClient', groupname, username, priority })
   }
 
   async removeGroupClient(groupname: string, username: string): Promise<void> {
-    await this.execute({ command: "removeGroupClient", groupname, username });
+    await this.execute({ command: 'removeGroupClient', groupname, username })
   }
 
   async addGroupRole(groupname: string, rolename: string, priority = -1): Promise<void> {
-    await this.execute({ command: "addGroupRole", groupname, rolename, priority });
+    await this.execute({ command: 'addGroupRole', groupname, rolename, priority })
   }
 
   async removeGroupRole(groupname: string, rolename: string): Promise<void> {
-    await this.execute({ command: "removeGroupRole", groupname, rolename });
+    await this.execute({ command: 'removeGroupRole', groupname, rolename })
   }
 
   async setAnonymousGroup(groupname: string): Promise<void> {
-    await this.execute({ command: "setAnonymousGroup", groupname });
+    await this.execute({ command: 'setAnonymousGroup', groupname })
   }
 
   async getAnonymousGroup(): Promise<string> {
-    const r = await this.execute({ command: "getAnonymousGroup" });
-    const group = this.requireData<{ groupname?: string }>(r, "group");
-    if (typeof group.groupname !== "string") {
-      throw new DynsecProtocolError("'group.groupname' missing", JSON.stringify(r));
+    const r = await this.execute({ command: 'getAnonymousGroup' })
+    const group = this.requireData<{ groupname?: string }>(r, 'group')
+    if (typeof group.groupname !== 'string') {
+      throw new DynsecProtocolError("'group.groupname' missing", JSON.stringify(r))
     }
-    return group.groupname;
+    return group.groupname
   }
 
   // ---------------------------------------------------------------------------
@@ -323,41 +306,37 @@ export class DynsecClient {
   // ---------------------------------------------------------------------------
 
   async createRole(role: Role): Promise<void> {
-    await this.execute({ command: "createRole", ...role });
+    await this.execute({ command: 'createRole', ...role })
   }
 
   async deleteRole(rolename: string): Promise<void> {
-    await this.execute({ command: "deleteRole", rolename });
+    await this.execute({ command: 'deleteRole', rolename })
   }
 
   async getRole(rolename: string): Promise<Role> {
-    const r = await this.execute({ command: "getRole", rolename });
-    return this.requireData<Role>(r, "role");
+    const r = await this.execute({ command: 'getRole', rolename })
+    return this.requireData<Role>(r, 'role')
   }
 
-  async listRoles(verbose: false, count?: number, offset?: number): Promise<ListResponse<string>>;
-  async listRoles(verbose: true, count?: number, offset?: number): Promise<ListResponse<Role>>;
-  async listRoles(
-    verbose = false,
-    count = -1,
-    offset = 0,
-  ): Promise<ListResponse<string> | ListResponse<Role>> {
-    const r = await this.execute({ command: "listRoles", verbose, count, offset });
+  async listRoles(verbose: false, count?: number, offset?: number): Promise<ListResponse<string>>
+  async listRoles(verbose: true, count?: number, offset?: number): Promise<ListResponse<Role>>
+  async listRoles(verbose = false, count = -1, offset = 0): Promise<ListResponse<string> | ListResponse<Role>> {
+    const r = await this.execute({ command: 'listRoles', verbose, count, offset })
     return {
-      items: this.requireData<string[] | Role[]>(r, "roles"),
-      total: this.requireData<number>(r, "totalCount"),
-    } as ListResponse<string> | ListResponse<Role>;
+      items: this.requireData<string[] | Role[]>(r, 'roles'),
+      total: this.requireData<number>(r, 'totalCount'),
+    } as ListResponse<string> | ListResponse<Role>
   }
 
   async modifyRole(role: Role): Promise<void> {
-    await this.execute({ command: "modifyRole", ...role });
+    await this.execute({ command: 'modifyRole', ...role })
   }
 
   async addRoleAcl(rolename: string, acl: Acl): Promise<void> {
-    await this.execute({ command: "addRoleACL", rolename, ...acl });
+    await this.execute({ command: 'addRoleACL', rolename, ...acl })
   }
 
   async removeRoleAcl(rolename: string, acltype: AclType, topic: string): Promise<void> {
-    await this.execute({ command: "removeRoleACL", rolename, acltype, topic });
+    await this.execute({ command: 'removeRoleACL', rolename, acltype, topic })
   }
 }

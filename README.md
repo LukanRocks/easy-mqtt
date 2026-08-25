@@ -1,18 +1,13 @@
 # easy-mqtt
 
-A single Docker container that bundles a **Mosquitto MQTT broker** (with the
-Dynamic Security plugin) and a **modern web admin UI** for managing it — clients,
+A single Docker container that bundles a **Mosquitto MQTT broker** and a **modern web admin UI** for managing clients,
 groups, roles, and ACLs.
 
 - **All persistent data lives in one host folder** (a single bind mount at `/data`).
-- **Zero-config first run:** `docker compose up` initializes the broker, creates a
-  dynsec admin account, and prints the generated password to the logs.
+- **Zero-config first run:** `docker compose up` initializes the broker, creates a dynsec admin account, and prints the generated password to the logs.
 - **Modern UI** with a dashboard and automatic dark/light theming.
 
-This is a ground-up TypeScript reimplementation. It reuses the wire-protocol
-knowledge of the C# reference app
-([zivillian/dynamic-security-admin](https://github.com/zivillian/dynamic-security-admin))
-as a functional spec — no source was copied. Licensed **MIT** (see [LICENSE](LICENSE)).
+This is a ground-up TypeScript implementation inspired by ([zivillian/dynamic-security-admin](https://github.com/zivillian/dynamic-security-admin)). Licensed **MIT** (see [LICENSE](LICENSE)).
 
 ## Architecture
 
@@ -22,7 +17,7 @@ as a functional spec — no source was copied. Licensed **MIT** (see [LICENSE](L
 │                                     ▲                     │                       │
 │                                     └── mqtt.js (localhost:1883, session creds) ──┘
 │  node app = Hono: serves the built SPA + typed RPC API + holds the MQTT link      │
-│  /data (single bind mount): dynamic-security.json, mosquitto.db, conf.d/, log/,   │
+│  /data (single bind mount): dynamic-security.json, mosquitto.db, config/, log/,   │
 │                             session-secret                                        │
 └──────────────────────────────────────────────────────────────────────────────────┘
 ```
@@ -57,17 +52,13 @@ Then open the admin UI at **http://localhost:8080** and sign in with the
 
 **First-run seeding.** On first start the broker is initialized with:
 
-- an **`admin`** client (holds the `admin` role) — this is the account you log
-  into the UI with;
-- a **`devices`** role granting publish + subscribe on all application topics
-  (`#`, which excludes `$SYS`/`$CONTROL`).
+- an **`admin`** client (holds the `admin` role) — this is the account you log into the UI with;
+- a **`devices`** role granting publish + subscribe on all application topics to easily get started.
 
-Create a client for each device and assign it the **`devices`** role and it can
-publish/subscribe immediately. Tighten or replace that role at any time from the
-Roles screen — it's only a starting point, seeded once.
+Create a client for each device and assign it the **`devices`** role and it can publish/subscribe immediately. Tighten or replace that role at any time from the Roles screen.
 
-Add TLS or websocket listeners by dropping a `.conf` file into `data/conf.d/`
-(see `data/conf.d/tls.conf.example`, created on first run) — no rebuild needed.
+Add TLS or websocket listeners by dropping a `.conf` file into `data/config/`
+(see `data/config/tls.conf.example`, created on first run) — no rebuild needed.
 
 ## Local development
 

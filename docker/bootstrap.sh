@@ -6,7 +6,7 @@ set -e
 
 DATA_DIR="${DATA_DIR:-/data}"
 
-mkdir -p "$DATA_DIR/conf.d" "$DATA_DIR/log"
+mkdir -p "$DATA_DIR/config" "$DATA_DIR/log"
 
 # Stable session secret so admin sessions survive container restarts.
 if [ ! -f "$DATA_DIR/session-secret" ]; then
@@ -14,9 +14,9 @@ if [ ! -f "$DATA_DIR/session-secret" ]; then
   chmod 600 "$DATA_DIR/session-secret"
 fi
 
-# Drop a conf.d example the first time so users can discover the override hook.
-if [ ! -f "$DATA_DIR/conf.d/tls.conf.example" ]; then
-  cat > "$DATA_DIR/conf.d/tls.conf.example" <<'EOF'
+# Drop a config example the first time so users can discover the override hook.
+if [ ! -f "$DATA_DIR/config/tls.conf.example" ]; then
+  cat > "$DATA_DIR/config/tls.conf.example" <<'EOF'
 # Rename to tls.conf and mount certs under /data to enable a TLS listener.
 # Security is global, so extra listeners inherit the dynsec plugin and the
 # anonymous policy automatically — you only declare the listener itself.
