@@ -3,7 +3,7 @@ import { Link, useNavigate } from "@tanstack/react-router";
 import { useQuery, useQueryClient } from "@tanstack/react-query";
 import { useForm } from "@tanstack/react-form";
 import type { ColumnDef } from "@tanstack/react-table";
-import { Plus, Trash2 } from "lucide-react";
+import { MoreHorizontal, Plus, Trash2 } from "lucide-react";
 import { toast } from "sonner";
 import type { Group } from "@easy-mqtt/dynsec";
 import { Badge } from "@/components/ui/badge";
@@ -17,6 +17,12 @@ import {
   DialogTitle,
   DialogTrigger,
 } from "@/components/ui/dialog";
+import {
+  DropdownMenu,
+  DropdownMenuContent,
+  DropdownMenuItem,
+  DropdownMenuTrigger,
+} from "@/components/ui/dropdown-menu";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
 import { ConfirmDialog } from "@/components/confirm-dialog";
@@ -30,12 +36,11 @@ function CreateGroupDialog() {
   const queryClient = useQueryClient();
 
   const form = useForm({
-    defaultValues: { groupname: "", textname: "", textdescription: "" },
+    defaultValues: { groupname: "", textdescription: "" },
     onSubmit: async ({ value }) => {
       try {
         await api.groups.create({
           groupname: value.groupname,
-          textname: value.textname || undefined,
           textdescription: value.textdescription || undefined,
         });
         await queryClient.invalidateQueries({ queryKey: queryKeys.groups });
@@ -81,18 +86,6 @@ function CreateGroupDialog() {
               </div>
             )}
           </form.Field>
-          <form.Field name="textname">
-            {(field) => (
-              <div className="space-y-2">
-                <Label htmlFor="g-textname">Display name</Label>
-                <Input
-                  id="g-textname"
-                  value={field.state.value}
-                  onChange={(e) => field.handleChange(e.target.value)}
-                />
-              </div>
-            )}
-          </form.Field>
           <form.Field name="textdescription">
             {(field) => (
               <div className="space-y-2">
@@ -120,9 +113,55 @@ function CreateGroupDialog() {
   );
 }
 
+function GroupRowActions({ group }: { group: Group }) {
+  const queryClient = useQueryClient();
+  const [menuOpen, setMenuOpen] = useState(false);
+  const [confirmOpen, setConfirmOpen] = useState(false);
+
+  return (
+    <div className="flex justify-end" onClick={(e) => e.stopPropagation()}>
+      <DropdownMenu open={menuOpen} onOpenChange={setMenuOpen}>
+        <DropdownMenuTrigger asChild>
+          <Button variant="ghost" size="icon" title="Actions">
+            <MoreHorizontal className="size-4" />
+            <span className="sr-only">Open actions</span>
+          </Button>
+        </DropdownMenuTrigger>
+        <DropdownMenuContent align="end">
+          <DropdownMenuItem
+            className="text-destructive focus:text-destructive"
+            onSelect={(e) => {
+              e.preventDefault();
+              setMenuOpen(false);
+              setConfirmOpen(true);
+            }}
+          >
+            <Trash2 />
+            Delete
+          </DropdownMenuItem>
+        </DropdownMenuContent>
+      </DropdownMenu>
+      <ConfirmDialog
+        open={confirmOpen}
+        onOpenChange={setConfirmOpen}
+        title={`Delete group “${group.groupname}”?`}
+        confirmLabel="Delete"
+        onConfirm={async () => {
+          try {
+            await api.groups.remove(group.groupname);
+            queryClient.invalidateQueries({ queryKey: queryKeys.groups });
+            toast.success("Group deleted");
+          } catch (e) {
+            toast.error(e instanceof ApiError ? e.message : "Delete failed");
+          }
+        }}
+      />
+    </div>
+  );
+}
+
 export function GroupsPage() {
   const navigate = useNavigate();
-  const queryClient = useQueryClient();
   const { data, isLoading } = useQuery(groupsQuery);
 
   const columns: ColumnDef<Group>[] = [
@@ -141,10 +180,10 @@ export function GroupsPage() {
       ),
     },
     {
-      accessorKey: "textname",
-      header: "Display name",
+      accessorKey: "textdescription",
+      header: "Description",
       cell: ({ row }) => (
-        <span className="text-muted-foreground">{row.original.textname || "—"}</span>
+        <span className="text-muted-foreground">{row.original.textdescription || "—"}</span>
       ),
     },
     {
@@ -173,28 +212,7 @@ export function GroupsPage() {
     {
       id: "actions",
       header: () => <span className="sr-only">Actions</span>,
-      cell: ({ row }) => (
-        <div className="flex justify-end" onClick={(e) => e.stopPropagation()}>
-          <ConfirmDialog
-            trigger={
-              <Button variant="ghost" size="icon" title="Delete">
-                <Trash2 className="size-4 text-destructive" />
-              </Button>
-            }
-            title={`Delete group “${row.original.groupname}”?`}
-            confirmLabel="Delete"
-            onConfirm={async () => {
-              try {
-                await api.groups.remove(row.original.groupname);
-                queryClient.invalidateQueries({ queryKey: queryKeys.groups });
-                toast.success("Group deleted");
-              } catch (e) {
-                toast.error(e instanceof ApiError ? e.message : "Delete failed");
-              }
-            }}
-          />
-        </div>
-      ),
+      cell: ({ row }) => <GroupRowActions group={row.original} />,
     },
   ];
 

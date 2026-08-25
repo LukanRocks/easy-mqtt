@@ -32,14 +32,12 @@ export function GroupDetailPage({ groupname }: { groupname: string }) {
   const roles = useQuery(rolesQuery);
   const clients = useQuery(clientsQuery);
 
-  const [textname, setTextname] = useState("");
   const [textdescription, setTextdescription] = useState("");
   const [roleToAdd, setRoleToAdd] = useState("");
   const [clientToAdd, setClientToAdd] = useState("");
 
   useEffect(() => {
     if (group) {
-      setTextname(group.textname ?? "");
       setTextdescription(group.textdescription ?? "");
     }
   }, [group]);
@@ -50,7 +48,7 @@ export function GroupDetailPage({ groupname }: { groupname: string }) {
   };
 
   const saveDetails = useMutation({
-    mutationFn: () => api.groups.update(groupname, { textname, textdescription }),
+    mutationFn: () => api.groups.update(groupname, { textdescription }),
     onSuccess: () => {
       refresh();
       toast.success("Details saved");
@@ -153,11 +151,7 @@ export function GroupDetailPage({ groupname }: { groupname: string }) {
             <CardHeader>
               <CardTitle className="text-base">Details</CardTitle>
             </CardHeader>
-            <CardContent className="grid gap-4 sm:grid-cols-2">
-              <div className="space-y-2">
-                <Label htmlFor="textname">Display name</Label>
-                <Input id="textname" value={textname} onChange={(e) => setTextname(e.target.value)} />
-              </div>
+            <CardContent className="space-y-4">
               <div className="space-y-2">
                 <Label htmlFor="desc">Description</Label>
                 <Input
@@ -166,11 +160,9 @@ export function GroupDetailPage({ groupname }: { groupname: string }) {
                   onChange={(e) => setTextdescription(e.target.value)}
                 />
               </div>
-              <div>
-                <Button onClick={() => saveDetails.mutate()} disabled={saveDetails.isPending}>
-                  {saveDetails.isPending ? "Saving…" : "Save details"}
-                </Button>
-              </div>
+              <Button onClick={() => saveDetails.mutate()} disabled={saveDetails.isPending}>
+                {saveDetails.isPending ? "Saving…" : "Save details"}
+              </Button>
             </CardContent>
           </Card>
 

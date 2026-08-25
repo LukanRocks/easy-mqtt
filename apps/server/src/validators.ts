@@ -32,7 +32,8 @@ export const addRoleSchema = z.object({ rolename: z.string().min(1), priority })
 
 export const createGroupSchema = z.object({
   groupname: z.string().min(1),
-  textname: z.string().optional(),
+  // Groups have no display name (textname) — the group name is the identity and
+  // the description explains its purpose. Mirrors the clients decision.
   textdescription: z.string().optional(),
   roles: z.array(rolePrioritySchema).optional(),
   clients: z
