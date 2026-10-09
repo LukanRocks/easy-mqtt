@@ -37,9 +37,9 @@ jobs:
       - name: Install dependencies
         run: pnpm install --frozen-lockfile
 
-      # Fix locally with `pnpm format`.
+      # Fix locally with `pnpm prettier:format`.
       - name: Check formatting
-        run: pnpm format:check
+        run: pnpm prettier:check
 
   test:
     runs-on: ubuntu-latest
@@ -68,7 +68,7 @@ jobs:
       # Integration tests are gated behind DYNSEC_IT (need a live broker), so
       # this runs the unit suite only — no broker required in CI.
       - name: Run tests
-        run: pnpm test:run
+        run: pnpm test
 
   build:
     runs-on: ubuntu-latest

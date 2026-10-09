@@ -8,16 +8,19 @@
     "node": ">=22"
   },
   "scripts": {
+    "prepare": "husky",
     "dev": "pnpm --parallel --filter \"./apps/*\" dev",
     "build": "pnpm --filter @easy-mqtt/web build && pnpm --filter @easy-mqtt/server build",
     "test": "pnpm -r test",
-    "test:run": "pnpm -r test:run",
     "typecheck": "pnpm -r typecheck",
-    "lint": "pnpm -r lint",
-    "format": "prettier --write .",
-    "format:check": "prettier --check ."
+    "prettier:format": "prettier --write .",
+    "prettier:check": "prettier --check ."
   },
   "devDependencies": {
+    "@commitlint/cli": "^21.2.3",
+    "@commitlint/config-conventional": "^21.2.3",
+    "husky": "^9.1.7",
+    "lint-staged": "^17.6.0",
     "prettier": "3.9.4",
     "prettier-plugin-tailwindcss": "0.8.1",
     "typescript": "^5.7.3"

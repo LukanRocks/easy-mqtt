@@ -45,6 +45,8 @@ Mosquitto's own permission checks apply. There is no separate "app password."
 | `apps/web`        | Vite + React + TanStack (Router/Query/Table/Form) + Tailwind + shadcn/ui.                                                       |
 | `docker/`         | Dockerfile, s6 service tree, `bootstrap.sh`, `mosquitto.conf`.                                                                  |
 
+See [AGENTS.md](AGENTS.md) for the `/apps` + `/packages` convention and the workspace's supply-chain settings.
+
 ## Quick start (Docker)
 
 ```bash
@@ -89,10 +91,10 @@ Environment variables (server): `MQTT_HOST` (default `localhost`), `MQTT_PORT`
 ## Tests
 
 ```bash
-pnpm test:run                 # unit tests (protocol correlation, ACL matching)
+pnpm test                     # unit tests (protocol correlation, ACL matching)
 
 # Integration tests against a live broker (admin/password by default):
-DYNSEC_IT=1 pnpm --filter @easy-mqtt/dynsec test:run
+DYNSEC_IT=1 pnpm --filter @easy-mqtt/dynsec test
 ```
 
 ## Scripts
@@ -102,4 +104,12 @@ DYNSEC_IT=1 pnpm --filter @easy-mqtt/dynsec test:run
 | `pnpm dev`       | Run web + server in watch mode.      |
 | `pnpm build`     | Build the SPA and the server bundle. |
 | `pnpm typecheck` | Type-check every package.            |
-| `pnpm test:run`  | Run all unit tests.                  |
+| `pnpm test`      | Run all unit tests.                  |
+
+## Contributing
+
+Commits follow [Conventional Commits](https://www.conventionalcommits.org/) (`feat:`, `fix:`, `docs:`, …), which a commitlint `commit-msg` hook enforces. A `pre-commit` hook runs Prettier on staged files. Both hooks install automatically when you run `pnpm install`.
+
+## License
+
+[MIT](LICENSE)

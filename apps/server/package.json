@@ -12,8 +12,7 @@
     "dev": "PORT=3001 tsx watch src/server.ts",
     "build": "tsup",
     "start": "node dist/server.js",
-    "test": "vitest --passWithNoTests",
-    "test:run": "vitest run --passWithNoTests",
+    "test": "vitest run --passWithNoTests",
     "typecheck": "tsc --noEmit"
   },
   "dependencies": {
