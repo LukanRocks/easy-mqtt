@@ -52,3 +52,26 @@ Don't loosen these, or add entries to `allowBuilds`, without discussing why firs
 Commits follow Conventional Commits (enforced by commitlint in the `commit-msg` hook). The `pre-commit` hook runs
 Prettier on staged files only — there's no ESLint in the hook, on purpose. Put `[skip image]` in a commit merged to
 `main` to land it without publishing a new Docker image.
+
+# Process and repo governance
+
+How changes get merged is documented in [CONTRIBUTING.md](CONTRIBUTING.md). Rules for agents working here:
+
+- **Never push to `main`.** Branch as `<type>/<short-description>` off `main` and open a pull request.
+- **Don't merge pull requests or use the admin bypass.** Approving and merging belong to the maintainer, even when
+  the checks are green.
+- **PR titles are Conventional Commits** — the squash merge uses the PR title as the commit subject and the PR
+  description as its body, so write both for `git log`. Add `[skip image]` to the title when the change shouldn't
+  publish a new Docker image.
+- **Required checks: `format`, `test`.** Run `pnpm prettier:check`, `pnpm typecheck` and `pnpm test` locally before
+  opening a PR. If you rename or remove a CI job, the `Protect Main` ruleset must be updated in the same change, or
+  every PR will wait on a check that never runs.
+- **Dependabot groups are generated.** After adding or removing a workspace package or a dependency, regenerate
+  `.github/dependabot.yml` with the papelada-repo-governance skill (`scripts/dependabot-config.mjs . --write`; the
+  schedule options are read back from the file's header) and commit it with the change. Don't hand-edit the group
+  lists.
+- **Don't loosen governance** — rulesets, `.github/dependabot.yml` cooldowns, Actions permissions, or the
+  `pnpm-workspace.yaml` security settings — without discussing why first.
+- **Pin GitHub Actions to a full commit SHA** with the version in a trailing comment
+  (`uses: actions/checkout@<sha> # v7.0.0`). The repo rejects unpinned actions and only allows GitHub-owned and
+  verified-creator actions.
