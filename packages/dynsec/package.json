@@ -14,11 +14,11 @@
     "typecheck": "tsc --noEmit"
   },
   "dependencies": {
-    "mqtt": "^5.14.0",
-    "zod": "^3.24.1"
+    "mqtt": "^5.16.0",
+    "zod": "^4.6.5"
   },
   "devDependencies": {
-    "@types/node": "^22.13.0",
-    "vitest": "^4.1.11"
+    "@types/node": "^26.6.4",
+    "vitest": "^5.0.3"
   }
 }
