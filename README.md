@@ -1,7 +1,15 @@
 # easy-mqtt
 
+[![Publish Docker Image](https://github.com/LukanRocks/easy-mqtt/actions/workflows/docker-publish.yml/badge.svg)](https://github.com/LukanRocks/easy-mqtt/actions/workflows/docker-publish.yml)
+
 A single Docker container that bundles a **Mosquitto MQTT broker** and a **modern web admin UI** for managing clients,
 groups, roles, and ACLs.
+
+The prebuilt image is published to the GitHub Container Registry:
+
+```bash
+docker pull ghcr.io/lukanrocks/easy-mqtt:latest
+```
 
 - **All persistent data lives in one host folder** (a single bind mount at `/data`).
 - **Zero-config first run:** `docker compose up` initializes the broker, creates a dynsec admin account, and prints the generated password to the logs.
