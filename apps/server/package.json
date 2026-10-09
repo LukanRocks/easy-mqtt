@@ -1,6 +1,6 @@
 {
   "name": "@easy-mqtt/server",
-  "version": "0.1.0",
+  "version": "1.0.0",
   "private": true,
   "type": "module",
   "exports": {
@@ -12,15 +12,14 @@
     "dev": "PORT=3001 tsx watch src/server.ts",
     "build": "tsup",
     "start": "node dist/server.js",
-    "test": "vitest --passWithNoTests",
-    "test:run": "vitest run --passWithNoTests",
+    "test": "vitest run --passWithNoTests",
     "typecheck": "tsc --noEmit"
   },
   "dependencies": {
     "@easy-mqtt/dynsec": "workspace:*",
     "@hono/node-server": "^1.14.0",
     "@hono/zod-validator": "^0.4.3",
-    "hono": "^4.7.0",
+    "hono": "^4.13.7",
     "iron-webcrypto": "^2.0.0",
     "mqtt": "^5.14.0",
     "zod": "^3.24.1"

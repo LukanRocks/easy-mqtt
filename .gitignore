@@ -1,12 +1,40 @@
+# Dependencies
 node_modules/
+.pnpm-store/
+
+# Build output
 dist/
 build/
-.turbo/
-*.log
-.DS_Store
+.next/
+out/
+*.tsbuildinfo
+
+# Env
 .env
 .env.local
-data/
+.env.*.local
+
+# Logs
+*.log
+npm-debug.log*
+pnpm-debug.log*
+
+# OS
+.DS_Store
+Thumbs.db
+
+# Editor
+.vscode/*
+!.vscode/extensions.json
+.idea/
+
+# Testing / coverage
 coverage/
-*.tsbuildinfo
+
+# Misc
+*.pem
+.turbo/
+
+# Project-specific
+data/
 .vite/
