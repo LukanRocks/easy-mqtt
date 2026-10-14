@@ -19,15 +19,15 @@
     "@easy-mqtt/dynsec": "workspace:*",
     "@hono/node-server": "^2.1.3",
     "@hono/zod-validator": "^0.9.1",
-    "hono": "^4.13.7",
+    "hono": "^4.13.13",
     "iron-webcrypto": "^2.0.0",
-    "mqtt": "^5.14.0",
-    "zod": "^3.24.1"
+    "mqtt": "^5.16.0",
+    "zod": "^4.6.7"
   },
   "devDependencies": {
-    "@types/node": "^22.13.0",
+    "@types/node": "^26.6.5",
     "tsup": "^8.3.6",
     "tsx": "^4.23.15",
-    "vitest": "^4.1.11"
+    "vitest": "^5.0.4"
   }
 }
