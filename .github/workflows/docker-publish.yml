@@ -106,6 +106,14 @@ jobs:
       - name: Checkout
         uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7.0.1
 
+      - name: Set up QEMU
+        uses: docker/setup-qemu-action@99012661954931238ded8c8b007157a8430204e1 # v4.4.0
+        with:
+          platforms: arm64
+
+      - name: Set up Docker Buildx
+        uses: docker/setup-buildx-action@f87e5991a6d7451dcb8d9637bfbc97413f497069 # v4.4.1
+
       - name: Log in to GitHub Container Registry
         if: github.event_name == 'push'
         uses: docker/login-action@dbcb813823bdd20940b903addbd779551569679f # v4.6.0
@@ -119,5 +127,9 @@ jobs:
         with:
           context: .
           file: docker/Dockerfile
+          platforms: linux/amd64,linux/arm64
+          # Skip the attestation manifest so GHCR doesn't list an extra
+          # "unknown/unknown" platform next to amd64 and arm64.
+          provenance: false
           push: ${{ github.event_name == 'push' }}
           tags: ghcr.io/lukanrocks/easy-mqtt:latest
