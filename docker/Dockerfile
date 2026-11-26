@@ -39,7 +39,7 @@ RUN set -eux; \
       amd64)  S6_ARCH=x86_64 ;; \
       arm64)  S6_ARCH=aarch64 ;; \
       arm)    S6_ARCH=armhf ;; \
-      *)      S6_ARCH=x86_64 ;; \
+      *)      echo "unsupported TARGETARCH='${TARGETARCH}'" >&2; exit 1 ;; \
     esac; \
     wget -O /tmp/s6-arch.tar.xz "https://github.com/just-containers/s6-overlay/releases/download/v${S6_OVERLAY_VERSION}/s6-overlay-${S6_ARCH}.tar.xz"; \
     tar -C / -Jxpf /tmp/s6-arch.tar.xz; \

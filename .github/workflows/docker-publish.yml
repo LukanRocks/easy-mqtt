@@ -128,5 +128,8 @@ jobs:
           context: .
           file: docker/Dockerfile
           platforms: linux/amd64,linux/arm64
+          # Skip the attestation manifest so GHCR doesn't list an extra
+          # "unknown/unknown" platform next to amd64 and arm64.
+          provenance: false
           push: ${{ github.event_name == 'push' }}
           tags: ghcr.io/lukanrocks/easy-mqtt:latest
