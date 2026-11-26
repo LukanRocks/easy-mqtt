@@ -12,6 +12,7 @@ import { GroupDetailPage } from '@/pages/group-detail'
 import { RolesPage } from '@/pages/roles'
 import { RoleDetailPage } from '@/pages/role-detail'
 import { AccessPage } from '@/pages/access'
+import { DefaultAclPage } from '@/pages/default-acl'
 
 interface RouterContext {
   queryClient: QueryClient
@@ -102,9 +103,15 @@ const accessRoute = createRoute({
   component: AccessPage,
 })
 
+const defaultAclRoute = createRoute({
+  getParentRoute: () => authRoute,
+  path: '/default-acl',
+  component: DefaultAclPage,
+})
+
 const routeTree = rootRoute.addChildren([
   loginRoute,
-  authRoute.addChildren([indexRoute, clientsRoute, clientDetailRoute, groupsRoute, groupDetailRoute, rolesRoute, roleDetailRoute, accessRoute]),
+  authRoute.addChildren([indexRoute, clientsRoute, clientDetailRoute, groupsRoute, groupDetailRoute, rolesRoute, roleDetailRoute, accessRoute, defaultAclRoute]),
 ])
 
 export function createAppRouter(queryClient: QueryClient) {

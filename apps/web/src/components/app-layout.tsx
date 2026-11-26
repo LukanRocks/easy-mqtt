@@ -1,6 +1,6 @@
 import { Link, Outlet, useNavigate, useRouterState } from '@tanstack/react-router'
 import { useQueryClient } from '@tanstack/react-query'
-import { Activity, Boxes, LayoutDashboard, LogOut, Radio, ShieldCheck, Users } from 'lucide-react'
+import { Activity, Boxes, LayoutDashboard, Lock, LogOut, Radio, ShieldCheck, Users } from 'lucide-react'
 import { toast } from 'sonner'
 import { Button } from '@/components/ui/button'
 import { ThemeToggle } from '@/components/theme-toggle'
@@ -13,6 +13,7 @@ const NAV = [
   { to: '/groups', label: 'Groups', icon: Boxes, exact: false },
   { to: '/roles', label: 'Roles', icon: ShieldCheck, exact: false },
   { to: '/access', label: 'Access', icon: Activity, exact: false },
+  { to: '/default-acl', label: 'Default ACL', icon: Lock, exact: false },
 ] as const
 
 export function AppLayout({ username }: { username: string }) {
